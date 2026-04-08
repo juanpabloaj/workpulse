@@ -7,6 +7,12 @@
 
 `workpulse` is a local-first terminal monitor (like htop) for coding agents.
 
+## Running
+
+```bash
+go run ./cmd/workpulse
+```
+
 The initial MVP focuses on:
 
 - Claude sessions discovered from `~/.claude`
@@ -68,12 +74,6 @@ The initial MVP focuses on:
 Some local agent directories contain shell snapshots and other sensitive material.
 
 `workpulse` should never render raw environment snapshots or secrets in the UI. The MVP intentionally avoids reading those files for display.
-
-## Running
-
-```bash
-go run ./cmd/workpulse
-```
 
 ## Current Limitations
 
