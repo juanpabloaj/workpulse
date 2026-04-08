@@ -154,14 +154,14 @@ func (m Model) View() string {
 	body := m.tableView()
 	detail := m.detailView()
 	helpView := m.helpView()
-	return strings.Join([]string{header, body, detail, helpView}, "\n\n")
+	return header + "\n\n" + body + "\n\n" + detail + "\n" + helpView
 }
 
 func (m *Model) applyLayout() {
 	headerHeight := lipgloss.Height(m.headerView())
 	detailHeight := detailPanelOuterHeight()
 	helpHeight := lipgloss.Height(m.helpView())
-	blockSpacing := 3
+	blockSpacing := 2
 
 	available := m.height - headerHeight - detailHeight - helpHeight - blockSpacing
 	if available < 3 {
