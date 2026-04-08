@@ -235,6 +235,7 @@ func (m Model) detailView() string {
 		fmt.Sprintf("Subagents: %d   Updated: %s", s.Subagents, formatTimeAgo(s.LastEventAt)),
 		fmt.Sprintf("CWD: %s", firstNonEmpty(s.CWD, "-")),
 		fmt.Sprintf("Last user: %s", firstNonEmpty(s.LastUserText, "-")),
+		fmt.Sprintf("Last event at: %s", formatTimestamp(s.LastEventAt)),
 		fmt.Sprintf("Last event: %s", firstNonEmpty(s.LastEvent, "-")),
 		fmt.Sprintf("Source: %s", firstNonEmpty(s.Source, "-")),
 	}
@@ -506,6 +507,13 @@ func formatTimeAgo(ts time.Time) string {
 	}
 	d := time.Since(ts).Round(time.Second)
 	return d.String() + " ago"
+}
+
+func formatTimestamp(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	return ts.Local().Format("2006-01-02 15:04:05")
 }
 
 func detailPanelContentHeight() int {
