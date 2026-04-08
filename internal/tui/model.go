@@ -65,6 +65,8 @@ const (
 type Model struct {
 	ctx       context.Context
 	collector *collect.Collector
+	version   string
+	buildDate string
 	help      help.Model
 	keys      keyMap
 	snapshot  model.Snapshot
@@ -77,10 +79,12 @@ type Model struct {
 	tableRows int
 }
 
-func NewModel(ctx context.Context, collector *collect.Collector) Model {
+func NewModel(ctx context.Context, collector *collect.Collector, version, buildDate string) Model {
 	return Model{
 		ctx:       ctx,
 		collector: collector,
+		version:   version,
+		buildDate: buildDate,
 		help:      help.New(),
 		keys: keyMap{
 			Up:         key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
@@ -248,6 +252,10 @@ func (m Model) detailView() string {
 
 func (m Model) helpView() string {
 	helpView := m.help.View(m.keys)
+	if m.version != "" || m.buildDate != "" {
+		versionText := m.help.Styles.ShortDesc.Render(fmt.Sprintf("  %s", formatVersionLabel(m.version, m.buildDate)))
+		helpView += versionText
+	}
 	if m.width <= 0 {
 		return helpView
 	}
@@ -437,6 +445,16 @@ func formatCompactTokens(value int) string {
 		return fmt.Sprintf("%dM", value/1000000)
 	}
 	return fmt.Sprintf("%dk", value/1000)
+}
+
+func formatVersionLabel(version, buildDate string) string {
+	if version == "" {
+		version = "dev"
+	}
+	if buildDate == "" {
+		buildDate = "unknown"
+	}
+	return fmt.Sprintf("workpulse %s (built %s)", version, buildDate)
 }
 
 func sessionStateLabel(state model.SessionState) string {

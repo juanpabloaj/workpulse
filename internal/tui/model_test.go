@@ -10,7 +10,7 @@ import (
 )
 
 func TestTableHeaderRendered(t *testing.T) {
-	m := NewModel(nil, nil)
+	m := NewModel(nil, nil, "dev", "unknown")
 	m.snapshot = model.Snapshot{
 		Sessions: []model.Session{
 			{
@@ -34,7 +34,7 @@ func TestTableHeaderRendered(t *testing.T) {
 }
 
 func TestDetailViewKeepsFixedHeightWithLongLines(t *testing.T) {
-	m := NewModel(nil, nil)
+	m := NewModel(nil, nil, "dev", "unknown")
 	m.width = 100
 	m.filtered = []model.Session{
 		{
@@ -60,7 +60,7 @@ func TestDetailViewKeepsFixedHeightWithLongLines(t *testing.T) {
 }
 
 func TestFullViewUsesConfiguredHeight(t *testing.T) {
-	m := NewModel(nil, nil)
+	m := NewModel(nil, nil, "dev", "unknown")
 	m.width = 120
 	m.height = 40
 	m.snapshot = model.Snapshot{
