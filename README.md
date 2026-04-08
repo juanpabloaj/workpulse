@@ -86,3 +86,7 @@ Some local agent directories contain shell snapshots and other sensitive materia
 - Codex live session correlation is heuristic because Codex does not expose a simple active-session PID index similar to Claude's `~/.claude/sessions/*.json`
 - The current process collector is implemented around `ps` and `lsof`, which is practical for macOS and Linux but not yet tuned for Windows
 - Token extraction is currently best-effort and depends on which fields are present in each local artifact
+
+## Random Notes
+
+- Maybe other names could have been atop or yaat (yeah another agent top). The name "workpulse" is meant to evoke the idea of taking the pulse of your coding agents, monitoring their health and activity in real time.
