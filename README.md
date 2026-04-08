@@ -7,6 +7,12 @@
 
 `workpulse` is a local-first terminal monitor (like htop) for coding agents.
 
+## Install
+
+```bash
+go install github.com/juanpabloaj/workpulse/cmd/workpulse@latest
+```
+
 ## Running
 
 ```bash
