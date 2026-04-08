@@ -64,6 +64,18 @@ type codexTokenCount struct {
 		} `json:"last_token_usage"`
 		ModelContextWindow int `json:"model_context_window"`
 	} `json:"info"`
+	RateLimits struct {
+		Primary struct {
+			UsedPercent   float64 `json:"used_percent"`
+			WindowMinutes int     `json:"window_minutes"`
+			ResetsAt      int64   `json:"resets_at"`
+		} `json:"primary"`
+		Secondary struct {
+			UsedPercent   float64 `json:"used_percent"`
+			WindowMinutes int     `json:"window_minutes"`
+			ResetsAt      int64   `json:"resets_at"`
+		} `json:"secondary"`
+	} `json:"rate_limits"`
 }
 
 func (c *CodexCollector) Collect(ctx context.Context) ([]model.Session, error) {
@@ -203,6 +215,10 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 		case "token_count":
 			var tokens codexTokenCount
 			if err := json.Unmarshal(env.Payload, &tokens); err == nil {
+				tokenTS := session.LastEventAt
+				if session.CodexRateLimitUpdatedAt.After(tokenTS) {
+					tokenTS = session.CodexRateLimitUpdatedAt
+				}
 				if tokens.Info.TotalTokenUsage.InputTokens > 0 {
 					session.Usage.InputTokens = tokens.Info.TotalTokenUsage.InputTokens
 					session.Usage.OutputTokens = tokens.Info.TotalTokenUsage.OutputTokens
@@ -211,6 +227,20 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 				if tokens.Info.ModelContextWindow > 0 {
 					session.Usage.ContextWindow = tokens.Info.ModelContextWindow
 					session.Usage.ContextPct = percentOfWindow(tokens.Info.LastTokenUsage.InputTokens, tokens.Info.ModelContextWindow)
+				}
+				if tokens.RateLimits.Primary.ResetsAt > 0 || tokens.RateLimits.Primary.UsedPercent > 0 {
+					session.CodexRateLimitPrimary = model.RateLimitWindow{
+						UsedPercent: tokens.RateLimits.Primary.UsedPercent,
+						ResetsAt:    time.Unix(tokens.RateLimits.Primary.ResetsAt, 0),
+					}
+					session.CodexRateLimitUpdatedAt = tokenTS
+				}
+				if tokens.RateLimits.Secondary.ResetsAt > 0 || tokens.RateLimits.Secondary.UsedPercent > 0 {
+					session.CodexRateLimitSecondary = model.RateLimitWindow{
+						UsedPercent: tokens.RateLimits.Secondary.UsedPercent,
+						ResetsAt:    time.Unix(tokens.RateLimits.Secondary.ResetsAt, 0),
+					}
+					session.CodexRateLimitUpdatedAt = tokenTS
 				}
 			}
 		}

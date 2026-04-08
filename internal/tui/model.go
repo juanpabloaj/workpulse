@@ -198,6 +198,9 @@ func (m Model) headerView() string {
 	if len(m.filtered) > 0 {
 		header += "  " + stateSummary(m.filtered)
 	}
+	if line := codexRateLimitSummary(m.snapshot.Sessions); line != "" {
+		header += "\n" + line
+	}
 
 	if m.err != nil {
 		header += "\n" + errorStyle.Render(m.err.Error())
@@ -554,6 +557,99 @@ func stateSummary(sessions []model.Session) string {
 		doneStyle.Render(fmt.Sprintf("done %d", done)),
 	}
 	return strings.Join(parts, "  ")
+}
+
+func codexRateLimitSummary(sessions []model.Session) string {
+	var primary model.RateLimitWindow
+	var secondary model.RateLimitWindow
+	var primaryUpdatedAt time.Time
+	var secondaryUpdatedAt time.Time
+	var hasPrimary bool
+	var hasSecondary bool
+	now := time.Now()
+
+	for _, session := range sessions {
+		if session.Agent != model.AgentCodex {
+			continue
+		}
+		sessionUpdatedAt := session.CodexRateLimitUpdatedAt
+		if sessionUpdatedAt.IsZero() {
+			sessionUpdatedAt = session.LastEventAt
+		}
+		if sessionUpdatedAt.IsZero() {
+			sessionUpdatedAt = session.UpdatedAt
+		}
+
+		if isValidRateLimitWindow(session.CodexRateLimitPrimary, now) &&
+			(!hasPrimary || sessionUpdatedAt.After(primaryUpdatedAt) || (sessionUpdatedAt.Equal(primaryUpdatedAt) && session.CodexRateLimitPrimary.UsedPercent > primary.UsedPercent)) {
+			primary = session.CodexRateLimitPrimary
+			primaryUpdatedAt = sessionUpdatedAt
+			hasPrimary = true
+		}
+		if isValidRateLimitWindow(session.CodexRateLimitSecondary, now) &&
+			(!hasSecondary || sessionUpdatedAt.After(secondaryUpdatedAt) || (sessionUpdatedAt.Equal(secondaryUpdatedAt) && session.CodexRateLimitSecondary.UsedPercent > secondary.UsedPercent)) {
+			secondary = session.CodexRateLimitSecondary
+			secondaryUpdatedAt = sessionUpdatedAt
+			hasSecondary = true
+		}
+	}
+
+	if !hasPrimary && !hasSecondary {
+		return ""
+	}
+
+	parts := []string{headerStyle.Render("Codex")}
+	if hasPrimary {
+		parts = append(parts, fmt.Sprintf("S:%s resets %s", colorRateLimitPercent(primary.UsedPercent), formatResetIn(primary.ResetsAt)))
+	}
+	if hasSecondary {
+		parts = append(parts, fmt.Sprintf("W:%s resets %s", colorRateLimitPercent(secondary.UsedPercent), formatResetIn(secondary.ResetsAt)))
+	}
+	return strings.Join(parts, "   ")
+}
+
+func isValidRateLimitWindow(window model.RateLimitWindow, now time.Time) bool {
+	if window.ResetsAt.IsZero() && window.UsedPercent <= 0 {
+		return false
+	}
+	if !window.ResetsAt.IsZero() && window.ResetsAt.Before(now) {
+		return false
+	}
+	return true
+}
+
+func colorRateLimitPercent(value float64) string {
+	label := fmt.Sprintf("%.0f%%", value)
+	switch {
+	case value > 75:
+		return errorStyle.Render(label)
+	case value >= 50:
+		return blockedStyle.Render(label)
+	default:
+		return runningStyle.Render(label)
+	}
+}
+
+func formatResetIn(ts time.Time) string {
+	if ts.IsZero() {
+		return "-"
+	}
+	d := time.Until(ts).Round(time.Minute)
+	if d <= 0 {
+		return "0m"
+	}
+	days := d / (24 * time.Hour)
+	d -= days * 24 * time.Hour
+	hours := d / time.Hour
+	d -= hours * time.Hour
+	minutes := d / time.Minute
+	if days > 0 {
+		return fmt.Sprintf("%dd%dh", days, hours)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh%dm", hours, minutes)
+	}
+	return fmt.Sprintf("%dm", minutes)
 }
 
 func stateIconPlain(state model.SessionState) string {

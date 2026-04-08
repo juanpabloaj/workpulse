@@ -88,6 +88,8 @@ Some local agent directories contain shell snapshots and other sensitive materia
 - Codex sessions do not include git branch information in their transcripts
 - The current process collector is implemented around `ps` and `lsof`, which is practical for macOS and Linux but not yet tuned for Windows
 - Token extraction is currently best-effort and depends on which fields are present in each local artifact
+- Rate limit display (header `S:` / `W:` indicators) is only available for Codex — Claude and Gemini do not expose quota data in their local session files
+- Context window percentage is available for all three agents, but the window size for Claude and Gemini is inferred from the model name using a static lookup table rather than read from session files
 
 ## Random Notes
 

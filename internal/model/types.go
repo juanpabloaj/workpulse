@@ -52,6 +52,11 @@ type UsageStats struct {
 	ContextWindow       int
 }
 
+type RateLimitWindow struct {
+	UsedPercent float64
+	ResetsAt    time.Time
+}
+
 type ToolStats struct {
 	CurrentTool    string
 	LastTool       string
@@ -62,27 +67,30 @@ type ToolStats struct {
 }
 
 type Session struct {
-	ID           string
-	Agent        AgentKind
-	Name         string
-	Project      string
-	CWD          string
-	Branch       string
-	Model        string
-	Provider     string
-	Version      string
-	StartedAt    time.Time
-	UpdatedAt    time.Time
-	LastEventAt  time.Time
-	LastEvent    string
-	LastUserText string
-	State        SessionState
-	Origin       SessionOrigin
-	Subagents    int
-	Process      *ProcessInfo
-	Usage        UsageStats
-	Tools        ToolStats
-	Source       string
+	ID                      string
+	Agent                   AgentKind
+	Name                    string
+	Project                 string
+	CWD                     string
+	Branch                  string
+	Model                   string
+	Provider                string
+	Version                 string
+	StartedAt               time.Time
+	UpdatedAt               time.Time
+	LastEventAt             time.Time
+	LastEvent               string
+	LastUserText            string
+	State                   SessionState
+	Origin                  SessionOrigin
+	Subagents               int
+	Process                 *ProcessInfo
+	Usage                   UsageStats
+	Tools                   ToolStats
+	CodexRateLimitPrimary   RateLimitWindow
+	CodexRateLimitSecondary RateLimitWindow
+	CodexRateLimitUpdatedAt time.Time
+	Source                  string
 }
 
 type Snapshot struct {
