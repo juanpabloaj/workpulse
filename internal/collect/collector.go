@@ -13,6 +13,7 @@ import (
 type Collector struct {
 	claude *ClaudeCollector
 	codex  *CodexCollector
+	gemini *GeminiCollector
 	proc   *ProcessCollector
 }
 
@@ -20,6 +21,7 @@ func NewCollector() *Collector {
 	return &Collector{
 		claude: NewClaudeCollector(),
 		codex:  NewCodexCollector(),
+		gemini: NewGeminiCollector(),
 		proc:   NewProcessCollector(),
 	}
 }
@@ -49,6 +51,11 @@ func (c *Collector) Collect(ctx context.Context) (model.Snapshot, error) {
 	codexSessions, err := c.codex.Collect(ctx)
 	if err == nil {
 		sessions = append(sessions, correlateSessions(codexSessions, procByPID, procByCWD)...)
+	}
+
+	geminiSessions, err := c.gemini.Collect(ctx)
+	if err == nil {
+		sessions = append(sessions, correlateSessions(geminiSessions, procByPID, procByCWD)...)
 	}
 
 	sessions = dedupeLiveSessions(sessions)

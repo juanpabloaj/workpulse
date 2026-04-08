@@ -131,6 +131,28 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func trimForDisplay(s string) string {
+	s = strings.TrimSpace(strings.ReplaceAll(s, "\n", " "))
+	s = strings.Join(strings.Fields(s), " ")
+	if len(s) > 96 {
+		return s[:93] + "..."
+	}
+	return s
+}
+
+func parseTimeBestEffort(value string) time.Time {
+	if value == "" {
+		return time.Time{}
+	}
+	if ts, err := time.Parse(time.RFC3339, value); err == nil {
+		return ts
+	}
+	if ts, err := time.Parse(time.RFC3339Nano, value); err == nil {
+		return ts
+	}
+	return time.Time{}
+}
+
 func processMatchesAgent(proc model.ProcessInfo, agent model.AgentKind) bool {
 	text := strings.ToLower(proc.Command + " " + proc.Args)
 	switch agent {

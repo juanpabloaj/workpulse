@@ -205,12 +205,3 @@ func codexContentText(content []codexContent) string {
 	}
 	return strings.Join(parts, " ")
 }
-
-func trimForDisplay(s string) string {
-	s = strings.TrimSpace(strings.ReplaceAll(s, "\n", " "))
-	s = strings.Join(strings.Fields(s), " ")
-	if len(s) > 96 {
-		return s[:93] + "..."
-	}
-	return s
-}
