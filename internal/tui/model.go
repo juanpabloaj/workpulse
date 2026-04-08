@@ -289,8 +289,9 @@ func (m Model) tableView() string {
 
 	start, end := visibleRange(m.cursor, m.tableRows, len(m.filtered))
 	for i := start; i < end; i++ {
-		row := renderSessionRow(m.filtered[i], columns)
-		if i == m.cursor {
+		selected := i == m.cursor
+		row := renderSessionRow(m.filtered[i], columns, selected)
+		if selected {
 			row = selectedRowStyle.Render(row)
 		}
 		lines = append(lines, row)
@@ -299,7 +300,7 @@ func (m Model) tableView() string {
 	return strings.Join(lines, "\n")
 }
 
-func renderSessionRow(s model.Session, columns []columnSpec) string {
+func renderSessionRow(s model.Session, columns []columnSpec, selected bool) string {
 	pid := "-"
 	cpu := "0.0"
 	ram := "0"
@@ -309,8 +310,13 @@ func renderSessionRow(s model.Session, columns []columnSpec) string {
 		ram = fmt.Sprintf("%dM", s.Process.RSSMB)
 	}
 
+	icon := stateIcon(s.State)
+	if selected {
+		icon = stateIconPlain(s.State)
+	}
+
 	values := []string{
-		stateIcon(s.State),
+		icon,
 		pid,
 		string(s.Agent),
 		string(s.State),
@@ -476,7 +482,7 @@ func stateSummary(sessions []model.Session) string {
 	return strings.Join(parts, "  ")
 }
 
-func stateIcon(state model.SessionState) string {
+func stateIconPlain(state model.SessionState) string {
 	switch state {
 	case model.StateRunning:
 		return "●"
@@ -488,6 +494,23 @@ func stateIcon(state model.SessionState) string {
 		return "○"
 	case model.StateDone:
 		return "·"
+	default:
+		return "?"
+	}
+}
+
+func stateIcon(state model.SessionState) string {
+	switch state {
+	case model.StateRunning:
+		return runningStyle.Render("●")
+	case model.StateBlocked:
+		return blockedStyle.Render("◆")
+	case model.StateError:
+		return errorStyle.Render("▲")
+	case model.StateIdle:
+		return idleStyle.Render("○")
+	case model.StateDone:
+		return doneStyle.Render("·")
 	default:
 		return "?"
 	}
