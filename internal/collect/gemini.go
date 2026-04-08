@@ -223,6 +223,7 @@ func updateGeminiSession(session *model.Session, msg geminiMessage) {
 
 	switch msg.Type {
 	case "user":
+		session.Tools.CurrentTool = ""
 		text := firstNonEmpty(geminiBlocksText(msg.DisplayContent), geminiContentText(msg.Content))
 		if text != "" {
 			session.LastUserText = trimForDisplay(text)
@@ -230,6 +231,7 @@ func updateGeminiSession(session *model.Session, msg geminiMessage) {
 	case "gemini":
 		text := geminiContentText(msg.Content)
 		if text != "" {
+			session.Tools.CurrentTool = ""
 			session.LastEvent = trimForDisplay(text)
 		}
 		if msg.Model != "" {

@@ -21,6 +21,7 @@ var (
 	detailStyle      = lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).Padding(0, 1)
 	errorStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
 	blockedStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	waitingStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("226"))
 	runningStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	idleStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	doneStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
@@ -440,6 +441,8 @@ func sessionStateLabel(state model.SessionState) string {
 	switch state {
 	case model.StateRunning:
 		return runningStyle.Render(label)
+	case model.StateWaiting:
+		return waitingStyle.Render(label)
 	case model.StateBlocked:
 		return blockedStyle.Render(label)
 	case model.StateError:
@@ -452,11 +455,13 @@ func sessionStateLabel(state model.SessionState) string {
 }
 
 func stateSummary(sessions []model.Session) string {
-	var blocked, errors, running, idle, done int
+	var blocked, waiting, errors, running, idle, done int
 	for _, session := range sessions {
 		switch session.State {
 		case model.StateBlocked:
 			blocked++
+		case model.StateWaiting:
+			waiting++
 		case model.StateError:
 			errors++
 		case model.StateRunning:
@@ -470,6 +475,7 @@ func stateSummary(sessions []model.Session) string {
 
 	parts := []string{
 		blockedStyle.Render(fmt.Sprintf("blocked %d", blocked)),
+		waitingStyle.Render(fmt.Sprintf("waiting %d", waiting)),
 		errorStyle.Render(fmt.Sprintf("error %d", errors)),
 		runningStyle.Render(fmt.Sprintf("running %d", running)),
 		idleStyle.Render(fmt.Sprintf("idle %d", idle)),
@@ -482,6 +488,8 @@ func stateIconPlain(state model.SessionState) string {
 	switch state {
 	case model.StateRunning:
 		return "●"
+	case model.StateWaiting:
+		return "?"
 	case model.StateBlocked:
 		return "◆"
 	case model.StateError:
@@ -499,6 +507,8 @@ func stateIcon(state model.SessionState) string {
 	switch state {
 	case model.StateRunning:
 		return runningStyle.Render("●")
+	case model.StateWaiting:
+		return "?"
 	case model.StateBlocked:
 		return blockedStyle.Render("◆")
 	case model.StateError:

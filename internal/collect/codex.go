@@ -163,6 +163,7 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 					session.Name = trimForDisplay(text)
 				}
 			} else if text != "" {
+				session.Tools.CurrentTool = ""
 				session.LastEvent = trimForDisplay(text)
 			}
 		case "function_call":
@@ -184,6 +185,9 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 		case "agent_message", "user_message":
 			if payload.Message != "" {
 				session.LastEvent = trimForDisplay(payload.Message)
+			}
+			if payload.Type == "agent_message" {
+				session.Tools.CurrentTool = ""
 			}
 		case "token_count":
 			var tokens codexTokenCount

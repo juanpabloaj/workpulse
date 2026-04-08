@@ -189,11 +189,15 @@ func deriveState(session model.Session) model.SessionState {
 	if session.Process == nil {
 		return model.StateDone
 	}
+
+	age := time.Since(session.LastEventAt)
+	if session.Process != nil && session.Tools.CurrentTool != "" && age > 5*time.Second {
+		return model.StateWaiting
+	}
 	if session.Process.CPU > 2.0 {
 		return model.StateRunning
 	}
 
-	age := time.Since(session.LastEventAt)
 	if age <= 15*time.Second {
 		return model.StateRunning
 	}
@@ -218,16 +222,18 @@ func stateRank(state model.SessionState) int {
 	switch state {
 	case model.StateBlocked:
 		return 0
-	case model.StateError:
+	case model.StateWaiting:
 		return 1
-	case model.StateRunning:
+	case model.StateError:
 		return 2
-	case model.StateIdle:
+	case model.StateRunning:
 		return 3
-	case model.StateDone:
+	case model.StateIdle:
 		return 4
-	default:
+	case model.StateDone:
 		return 5
+	default:
+		return 6
 	}
 }
 

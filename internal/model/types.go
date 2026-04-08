@@ -14,6 +14,7 @@ type SessionState string
 
 const (
 	StateRunning SessionState = "running"
+	StateWaiting SessionState = "waiting"
 	StateIdle    SessionState = "idle"
 	StateBlocked SessionState = "blocked"
 	StateError   SessionState = "error"
