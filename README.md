@@ -83,7 +83,9 @@ Some local agent directories contain shell snapshots and other sensitive materia
 
 ## Current Limitations
 
+- Only tested on macOS — Linux may work but is untested, Windows is not supported
 - Codex live session correlation is heuristic because Codex does not expose a simple active-session PID index similar to Claude's `~/.claude/sessions/*.json`
+- Codex sessions do not include git branch information in their transcripts
 - The current process collector is implemented around `ps` and `lsof`, which is practical for macOS and Linux but not yet tuned for Windows
 - Token extraction is currently best-effort and depends on which fields are present in each local artifact
 
