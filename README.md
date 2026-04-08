@@ -1,5 +1,8 @@
 # workpulse
 
+<img width="800" height="602" alt="workpulse" src="https://github.com/user-attachments/assets/7c9fc808-6c0a-4929-a43a-ecf32ccfb6cc" />
+
+
 > **Early stage software.** Expect breaking changes, incomplete data, and rough edges. Use at your own risk.
 
 `workpulse` is a local-first terminal monitor (like htop) for coding agents.
