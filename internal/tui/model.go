@@ -264,15 +264,16 @@ func (m Model) tableView() string {
 		{title: "PID", width: 5},
 		{title: "Agent", width: 6},
 		{title: "State", width: 7},
-		{title: "Project", width: 14},
-		{title: "Branch", width: 8},
-		{title: "Model", width: 13},
-		{title: "Origin", width: 7},
-		{title: "Tool", width: 10},
+		{title: "Project", width: 12},
+		{title: "Branch", width: 6},
+		{title: "Model", width: 10},
+		{title: "Tool", width: 8},
 		{title: "CPU%", width: 4},
 		{title: "RAM", width: 5},
 		{title: "Err", width: 3},
-		{title: "Last Event", width: 18},
+		{title: "In", width: 6},
+		{title: "Out", width: 6},
+		{title: "Last Event", width: 14},
 	}
 
 	headerCells := make([]string, 0, len(columns))
@@ -323,12 +324,13 @@ func renderSessionRow(s model.Session, columns []columnSpec, selected bool) stri
 		firstNonEmpty(s.Project, "-"),
 		firstNonEmpty(s.Branch, "-"),
 		firstNonEmpty(shortenModel(s.Model), "-"),
-		shortOrigin(s.Origin),
-		firstNonEmpty(shortText(s.Tools.LastTool, 10), "-"),
+		firstNonEmpty(shortText(s.Tools.LastTool, 8), "-"),
 		cpu,
 		ram,
 		fmt.Sprintf("%d", s.Tools.ToolErrors),
-		firstNonEmpty(shortText(s.LastEvent, 18), "-"),
+		formatCompactTokens(s.Usage.InputTokens),
+		formatCompactTokens(s.Usage.OutputTokens),
+		firstNonEmpty(shortText(s.LastEvent, 14), "-"),
 	}
 
 	cells := make([]string, 0, len(values))
@@ -398,7 +400,7 @@ func padRight(value string, width int) string {
 }
 
 func shortenModel(modelName string) string {
-	return shortText(modelName, 13)
+	return shortText(modelName, 10)
 }
 
 func filterSessions(sessions []model.Session, mode filterMode) []model.Session {
@@ -422,21 +424,15 @@ func isRecentForDisplay(session model.Session) bool {
 	return time.Since(session.LastEventAt) <= 24*time.Hour
 }
 
-func shortOrigin(origin model.SessionOrigin) string {
-	switch origin {
-	case model.OriginLiveIndex:
-		return "live"
-	case model.OriginTranscript:
-		return "recent"
-	case model.OriginMerged:
-		return "merged"
-	default:
-		return string(origin)
-	}
-}
-
 func shortText(value string, width int) string {
 	return truncatePlainText(value, width)
+}
+
+func formatCompactTokens(value int) string {
+	if value < 1000 {
+		return fmt.Sprintf("%d", value)
+	}
+	return fmt.Sprintf("%dk", value/1000)
 }
 
 func sessionStateLabel(state model.SessionState) string {
