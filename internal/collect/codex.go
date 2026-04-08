@@ -132,6 +132,13 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 	}
 
 	switch env.Type {
+	case "turn_context":
+		var payload struct {
+			Model string `json:"model"`
+		}
+		if err := json.Unmarshal(env.Payload, &payload); err == nil && payload.Model != "" {
+			session.Model = payload.Model
+		}
 	case "session_meta":
 		var meta struct {
 			Payload codexSessionMeta `json:"payload"`
