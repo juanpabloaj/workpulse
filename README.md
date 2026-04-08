@@ -1,5 +1,7 @@
 # workpulse
 
+> **Early stage software.** Expect breaking changes, incomplete data, and rough edges. Use at your own risk.
+
 `workpulse` is a local-first terminal monitor (like htop) for coding agents.
 
 The initial MVP focuses on:
