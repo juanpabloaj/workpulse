@@ -192,9 +192,11 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 		case "token_count":
 			var tokens codexTokenCount
 			if err := json.Unmarshal(env.Payload, &tokens); err == nil {
-				session.Usage.InputTokens = tokens.Info.TotalTokenUsage.InputTokens
-				session.Usage.OutputTokens = tokens.Info.TotalTokenUsage.OutputTokens
-				session.Usage.CacheReadTokens = tokens.Info.TotalTokenUsage.CachedInputTokens
+				if tokens.Info.TotalTokenUsage.InputTokens > 0 {
+					session.Usage.InputTokens = tokens.Info.TotalTokenUsage.InputTokens
+					session.Usage.OutputTokens = tokens.Info.TotalTokenUsage.OutputTokens
+					session.Usage.CacheReadTokens = tokens.Info.TotalTokenUsage.CachedInputTokens
+				}
 			}
 		}
 	}

@@ -433,6 +433,9 @@ func formatCompactTokens(value int) string {
 	if value < 1000 {
 		return fmt.Sprintf("%d", value)
 	}
+	if value >= 1000000 {
+		return fmt.Sprintf("%dM", value/1000000)
+	}
 	return fmt.Sprintf("%dk", value/1000)
 }
 
