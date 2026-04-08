@@ -59,6 +59,10 @@ type codexTokenCount struct {
 			CachedInputTokens     int `json:"cached_input_tokens"`
 			ReasoningOutputTokens int `json:"reasoning_output_tokens"`
 		} `json:"total_token_usage"`
+		LastTokenUsage struct {
+			InputTokens int `json:"input_tokens"`
+		} `json:"last_token_usage"`
+		ModelContextWindow int `json:"model_context_window"`
 	} `json:"info"`
 }
 
@@ -203,6 +207,10 @@ func updateCodexSession(session *model.Session, env codexEnvelope) {
 					session.Usage.InputTokens = tokens.Info.TotalTokenUsage.InputTokens
 					session.Usage.OutputTokens = tokens.Info.TotalTokenUsage.OutputTokens
 					session.Usage.CacheReadTokens = tokens.Info.TotalTokenUsage.CachedInputTokens
+				}
+				if tokens.Info.ModelContextWindow > 0 {
+					session.Usage.ContextWindow = tokens.Info.ModelContextWindow
+					session.Usage.ContextPct = percentOfWindow(tokens.Info.LastTokenUsage.InputTokens, tokens.Info.ModelContextWindow)
 				}
 			}
 		}

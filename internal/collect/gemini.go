@@ -241,6 +241,10 @@ func updateGeminiSession(session *model.Session, msg geminiMessage) {
 			session.Usage.InputTokens += msg.Tokens.Input
 			session.Usage.OutputTokens += msg.Tokens.Output
 			session.Usage.CacheReadTokens += msg.Tokens.Cached
+			if strings.HasPrefix(session.Model, "gemini-") {
+				session.Usage.ContextWindow = 1048576
+				session.Usage.ContextPct = percentOfWindow(msg.Tokens.Input, session.Usage.ContextWindow)
+			}
 		}
 		for _, tool := range msg.ToolCalls {
 			session.Tools.ToolCalls++

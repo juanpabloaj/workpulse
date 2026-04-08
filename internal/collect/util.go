@@ -153,6 +153,13 @@ func parseTimeBestEffort(value string) time.Time {
 	return time.Time{}
 }
 
+func percentOfWindow(used, window int) float64 {
+	if used <= 0 || window <= 0 {
+		return 0
+	}
+	return (float64(used) / float64(window)) * 100
+}
+
 func processMatchesAgent(proc model.ProcessInfo, agent model.AgentKind) bool {
 	text := strings.ToLower(proc.Command + " " + proc.Args)
 	switch agent {

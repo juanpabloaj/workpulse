@@ -241,6 +241,11 @@ func updateClaudeSession(session *model.Session, msg claudeMessage) {
 		session.Usage.OutputTokens += usage.OutputTokens
 		session.Usage.CacheReadTokens += usage.CacheReadInput
 		session.Usage.CacheCreationTokens += usage.CacheCreationInput
+		if strings.HasPrefix(session.Model, "claude-") {
+			totalInput := usage.InputTokens + usage.CacheReadInput + usage.CacheCreationInput
+			session.Usage.ContextWindow = 200000
+			session.Usage.ContextPct = percentOfWindow(totalInput, session.Usage.ContextWindow)
+		}
 	}
 
 	for _, block := range msg.Message.Content {

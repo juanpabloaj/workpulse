@@ -48,6 +48,8 @@ type UsageStats struct {
 	OutputTokens        int
 	CacheReadTokens     int
 	CacheCreationTokens int
+	ContextPct          float64
+	ContextWindow       int
 }
 
 type ToolStats struct {

@@ -25,6 +25,9 @@ var (
 	runningStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
 	idleStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("244"))
 	doneStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("240"))
+	ctxGreenStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("42"))
+	ctxYellowStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("178"))
+	ctxRedStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("203"))
 	tableCellStyle   = lipgloss.NewStyle()
 	selectedRowStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("230")).Background(lipgloss.Color("57"))
 	tableHeaderStyle = lipgloss.NewStyle().
@@ -237,6 +240,7 @@ func (m Model) detailView() string {
 		fmt.Sprintf("Origin: %s", s.Origin),
 		fmt.Sprintf("Tool: %s   Calls: %d   Errors: %d", firstNonEmpty(s.Tools.LastTool, "-"), s.Tools.ToolCalls, s.Tools.ToolErrors),
 		fmt.Sprintf("Tokens: in %d  out %d  cache %d", s.Usage.InputTokens, s.Usage.OutputTokens, s.Usage.CacheReadTokens),
+		fmt.Sprintf("Context: %s", formatContextDetail(s)),
 		fmt.Sprintf("Subagents: %d   Updated: %s", s.Subagents, formatTimeAgo(s.LastEventAt)),
 		fmt.Sprintf("CWD: %s", firstNonEmpty(s.CWD, "-")),
 		fmt.Sprintf("Last user: %s", firstNonEmpty(s.LastUserText, "-")),
@@ -277,6 +281,7 @@ func (m Model) tableView() string {
 		{title: "Branch", width: 6},
 		{title: "Model", width: 10},
 		{title: "Tool", width: 8},
+		{title: "Ctx", width: 4},
 		{title: "CPU%", width: 4},
 		{title: "RAM", width: 5},
 		{title: "Err", width: 3},
@@ -334,6 +339,7 @@ func renderSessionRow(s model.Session, columns []columnSpec, selected bool) stri
 		firstNonEmpty(s.Branch, "-"),
 		firstNonEmpty(shortenModel(s.Model), "-"),
 		firstNonEmpty(shortText(s.Tools.LastTool, 8), "-"),
+		formatContextCell(s.Usage.ContextPct, selected),
 		cpu,
 		ram,
 		fmt.Sprintf("%d", s.Tools.ToolErrors),
@@ -451,6 +457,45 @@ func formatCompactTokens(value int) string {
 		return fmt.Sprintf("%dM", value/1000000)
 	}
 	return fmt.Sprintf("%dk", value/1000)
+}
+
+func formatCompactWindow(value int) string {
+	if value <= 0 {
+		return "-"
+	}
+	if value >= 1000000 {
+		return fmt.Sprintf("%dM", value/1000000)
+	}
+	if value >= 1000 {
+		return fmt.Sprintf("%dK", value/1000)
+	}
+	return fmt.Sprintf("%d", value)
+}
+
+func formatContextCell(pct float64, selected bool) string {
+	if pct <= 0 {
+		return "-"
+	}
+	label := fmt.Sprintf("%.0f%%", pct)
+	if selected {
+		return label
+	}
+	switch {
+	case pct >= 80:
+		return ctxRedStyle.Render(label)
+	case pct >= 60:
+		return ctxYellowStyle.Render(label)
+	default:
+		return ctxGreenStyle.Render(label)
+	}
+}
+
+func formatContextDetail(s model.Session) string {
+	if s.Usage.ContextPct <= 0 || s.Usage.ContextWindow <= 0 {
+		return "-"
+	}
+	used := int((s.Usage.ContextPct / 100) * float64(s.Usage.ContextWindow))
+	return fmt.Sprintf("%.0f%% (%s / %s)", s.Usage.ContextPct, formatCompactWindow(used), formatCompactWindow(s.Usage.ContextWindow))
 }
 
 func formatVersionLabel(version, buildDate string) string {
@@ -573,7 +618,7 @@ func formatTimestamp(ts time.Time) string {
 }
 
 func detailPanelContentHeight() int {
-	return 14
+	return 15
 }
 
 func detailPanelOuterHeight() int {
