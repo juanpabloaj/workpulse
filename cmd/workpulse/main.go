@@ -47,6 +47,9 @@ func hasVersionFlag(args []string) bool {
 }
 
 func formatVersion(version, buildDate string) string {
+	if buildDate == "" || buildDate == "unknown" {
+		return fmt.Sprintf("workpulse %s", version)
+	}
 	return fmt.Sprintf("workpulse %s (built %s)", version, buildDate)
 }
 

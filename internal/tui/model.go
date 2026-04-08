@@ -451,8 +451,8 @@ func formatVersionLabel(version, buildDate string) string {
 	if version == "" {
 		version = "dev"
 	}
-	if buildDate == "" {
-		buildDate = "unknown"
+	if buildDate == "" || buildDate == "unknown" {
+		return fmt.Sprintf("workpulse %s", version)
 	}
 	return fmt.Sprintf("workpulse %s (built %s)", version, buildDate)
 }
