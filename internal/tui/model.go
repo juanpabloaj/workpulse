@@ -409,6 +409,12 @@ func padRight(value string, width int) string {
 }
 
 func shortenModel(modelName string) string {
+	for _, prefix := range []string{"claude-", "gemini-"} {
+		if strings.HasPrefix(modelName, prefix) {
+			modelName = modelName[len(prefix):]
+			break
+		}
+	}
 	return shortText(modelName, 10)
 }
 
