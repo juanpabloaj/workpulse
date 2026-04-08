@@ -57,6 +57,7 @@ Each adapter is responsible for a single vendor-specific local artifact format.
 
 - `ClaudeCollector`
 - `CodexCollector`
+- `GeminiCollector`
 
 Adapters normalize vendor-specific events into a shared session model.
 

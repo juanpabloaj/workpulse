@@ -5,7 +5,7 @@
 `workpulse` is a Go CLI/TUI application.
 
 - `cmd/workpulse/`: application entrypoint
-- `internal/collect/`: data collectors for Claude, Codex, OS processes, and correlation logic
+- `internal/collect/`: data collectors for Claude, Codex, Gemini, OS processes, and correlation logic
 - `internal/model/`: shared domain types
 - `internal/tui/`: Bubble Tea model, layout, and rendering tests
 - `README.md`, `DESIGN.md`: product intent and architecture notes
@@ -62,4 +62,4 @@ PRs should include:
 
 ## Security & Configuration Notes
 
-Do not display secrets from local agent directories. Files under `~/.claude` and `~/.codex` may contain transcripts, shell snapshots, and sensitive environment data. Treat them as untrusted input and redact aggressively in UI-facing features.
+Do not display secrets from local agent directories. Files under `~/.claude`, `~/.codex`, and `~/.gemini` may contain transcripts, shell snapshots, and sensitive environment data. Treat them as untrusted input and redact aggressively in UI-facing features.

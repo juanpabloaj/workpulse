@@ -6,6 +6,7 @@ The initial MVP focuses on:
 
 - Claude sessions discovered from `~/.claude`
 - Codex sessions discovered from `~/.codex`
+- Gemini sessions discovered from `~/.gemini`
 - OS-level process correlation
 - A terminal UI that combines process data with session metadata, tool activity, and token usage
 
@@ -32,6 +33,12 @@ The initial MVP focuses on:
 
 - `~/.codex/sessions/**/rollout-*.jsonl`
 
+### Gemini
+
+- `~/.gemini/tmp/<project-hash>/chats/session-*.json`
+- `~/.gemini/projects.json` for project-to-path mapping
+- `~/.gemini/history/*/.project_root` as fallback CWD resolution
+
 ### OS Process Data
 
 - `ps`
@@ -39,7 +46,7 @@ The initial MVP focuses on:
 
 ## MVP Scope
 
-- discover local Claude and Codex sessions
+- discover local Claude, Codex, and Gemini sessions
 - parse real metrics already available in local session artifacts
 - correlate sessions with live processes when possible
 - render a TUI with a main table and a detail pane
