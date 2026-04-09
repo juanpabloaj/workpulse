@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os/exec"
@@ -62,24 +63,61 @@ func (c *ProcessCollector) Collect(ctx context.Context) ([]model.ProcessInfo, er
 			TTY:     fields[6],
 			Command: command,
 			Args:    args,
-			CWD:     processCWD(ctx, pid),
 		}
 		processes = append(processes, process)
+	}
+
+	cwds := batchCWD(ctx, processes)
+	for i := range processes {
+		processes[i].CWD = cwds[processes[i].PID]
 	}
 
 	return processes, nil
 }
 
-func processCWD(ctx context.Context, pid int) string {
-	cmd := exec.CommandContext(ctx, "lsof", "-a", "-p", fmt.Sprintf("%d", pid), "-d", "cwd", "-Fn")
-	out, err := cmd.Output()
-	if err != nil {
-		return ""
+func batchCWD(ctx context.Context, processes []model.ProcessInfo) map[int]string {
+	if len(processes) == 0 {
+		return nil
 	}
-	for _, line := range strings.Split(string(out), "\n") {
-		if strings.HasPrefix(line, "n") {
-			return strings.TrimPrefix(line, "n")
+
+	pids := make([]string, 0, len(processes))
+	for _, process := range processes {
+		if process.PID > 0 {
+			pids = append(pids, fmt.Sprintf("%d", process.PID))
 		}
 	}
-	return ""
+	if len(pids) == 0 {
+		return nil
+	}
+
+	cmd := exec.CommandContext(ctx, "lsof", "-Fn", "-d", "cwd", "-p", strings.Join(pids, ","))
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	err := cmd.Run()
+	if err != nil {
+		if _, ok := err.(*exec.ExitError); !ok {
+			return nil
+		}
+	}
+	return parseBatchCWDOutput(stdout.String())
+}
+
+func parseBatchCWDOutput(out string) map[int]string {
+	cwds := make(map[int]string)
+	currentPID := 0
+	currentFD := ""
+
+	for _, line := range strings.Split(out, "\n") {
+		switch {
+		case strings.HasPrefix(line, "p"):
+			currentPID, _ = strconv.Atoi(strings.TrimPrefix(line, "p"))
+			currentFD = ""
+		case strings.HasPrefix(line, "f"):
+			currentFD = strings.TrimPrefix(line, "f")
+		case strings.HasPrefix(line, "n") && currentPID != 0 && currentFD == "cwd":
+			cwds[currentPID] = strings.TrimPrefix(line, "n")
+		}
+	}
+
+	return cwds
 }
