@@ -8,17 +8,28 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/juanpabloaj/workpulse/internal/model"
 )
 
 type ClaudeCollector struct {
-	root string
+	root         string
+	mu           sync.RWMutex
+	sessionCache map[string]claudeSessionCacheEntry
 }
 
 func NewClaudeCollector() *ClaudeCollector {
-	return &ClaudeCollector{root: homePath(".claude")}
+	return &ClaudeCollector{
+		root:         homePath(".claude"),
+		sessionCache: make(map[string]claudeSessionCacheEntry),
+	}
+}
+
+type claudeSessionCacheEntry struct {
+	session model.Session
+	mtime   time.Time
 }
 
 type claudeSessionIndex struct {
@@ -146,6 +157,22 @@ func (c *ClaudeCollector) readIndexedSession(_ context.Context, path string) (mo
 
 	projectDir := filepath.Join(c.root, "projects", encodeClaudeProject(index.CWD))
 	transcriptPath := filepath.Join(projectDir, fmt.Sprintf("%s.jsonl", index.SessionID))
+	if info, err := os.Stat(transcriptPath); err == nil {
+		if cached, ok := c.cachedClaudeSession(transcriptPath, info.ModTime()); ok {
+			cached.ID = index.SessionID
+			cached.Agent = model.AgentClaude
+			cached.Name = firstNonEmpty(index.Name, index.Kind, cached.Name, "Claude session")
+			cached.Project = shortenPath(index.CWD)
+			cached.CWD = index.CWD
+			cached.StartedAt = parseUnixMillis(index.StartedAt)
+			cached.UpdatedAt = parseUnixMillis(index.StartedAt)
+			cached.Process = &model.ProcessInfo{PID: index.PID}
+			cached.Origin = model.OriginLiveIndex
+			cached.Source = transcriptPath
+			return cached, true
+		}
+	}
+
 	lines, err := tailLines(transcriptPath, 400)
 	if err != nil {
 		return model.Session{}, false
@@ -179,10 +206,21 @@ func (c *ClaudeCollector) readIndexedSession(_ context.Context, path string) (mo
 	if session.UpdatedAt.IsZero() {
 		session.UpdatedAt = session.LastEventAt
 	}
+	if info, err := os.Stat(transcriptPath); err == nil {
+		c.mu.Lock()
+		c.sessionCache[transcriptPath] = claudeSessionCacheEntry{session: session, mtime: info.ModTime()}
+		c.mu.Unlock()
+	}
 	return session, true
 }
 
 func (c *ClaudeCollector) readProjectSession(_ context.Context, path string) (model.Session, bool) {
+	if info, err := os.Stat(path); err == nil {
+		if cached, ok := c.cachedClaudeSession(path, info.ModTime()); ok {
+			return cached, cached.ID != ""
+		}
+	}
+
 	lines, err := tailLines(path, 400)
 	if err != nil || len(lines) == 0 {
 		return model.Session{}, false
@@ -216,7 +254,22 @@ func (c *ClaudeCollector) readProjectSession(_ context.Context, path string) (mo
 			session.UpdatedAt = info.ModTime()
 		}
 	}
+	if info, err := os.Stat(path); err == nil {
+		c.mu.Lock()
+		c.sessionCache[path] = claudeSessionCacheEntry{session: session, mtime: info.ModTime()}
+		c.mu.Unlock()
+	}
 	return session, session.ID != ""
+}
+
+func (c *ClaudeCollector) cachedClaudeSession(path string, modTime time.Time) (model.Session, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, ok := c.sessionCache[path]
+	if !ok || !entry.mtime.Equal(modTime) {
+		return model.Session{}, false
+	}
+	return entry.session, true
 }
 
 func updateClaudeSession(session *model.Session, msg claudeMessage) {

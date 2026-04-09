@@ -4,20 +4,32 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/juanpabloaj/workpulse/internal/model"
 )
 
 type CodexCollector struct {
-	root string
+	root         string
+	mu           sync.RWMutex
+	sessionCache map[string]codexSessionCacheEntry
 }
 
 func NewCodexCollector() *CodexCollector {
-	return &CodexCollector{root: homePath(".codex")}
+	return &CodexCollector{
+		root:         homePath(".codex"),
+		sessionCache: make(map[string]codexSessionCacheEntry),
+	}
+}
+
+type codexSessionCacheEntry struct {
+	session model.Session
+	mtime   time.Time
 }
 
 type codexEnvelope struct {
@@ -99,6 +111,12 @@ func (c *CodexCollector) Collect(ctx context.Context) ([]model.Session, error) {
 }
 
 func (c *CodexCollector) readRollout(_ context.Context, path string) (model.Session, bool) {
+	if info, err := os.Stat(path); err == nil {
+		if cached, ok := c.cachedCodexSession(path, info.ModTime()); ok {
+			return cached, true
+		}
+	}
+
 	lines, err := tailLines(path, 400)
 	if err != nil || len(lines) == 0 {
 		return model.Session{}, false
@@ -138,7 +156,22 @@ func (c *CodexCollector) readRollout(_ context.Context, path string) (model.Sess
 	if session.UpdatedAt.IsZero() {
 		session.UpdatedAt = time.Now()
 	}
+	if info, err := os.Stat(path); err == nil {
+		c.mu.Lock()
+		c.sessionCache[path] = codexSessionCacheEntry{session: session, mtime: info.ModTime()}
+		c.mu.Unlock()
+	}
 	return session, true
+}
+
+func (c *CodexCollector) cachedCodexSession(path string, modTime time.Time) (model.Session, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, ok := c.sessionCache[path]
+	if !ok || !entry.mtime.Equal(modTime) {
+		return model.Session{}, false
+	}
+	return entry.session, true
 }
 
 func updateCodexSession(session *model.Session, env codexEnvelope) {

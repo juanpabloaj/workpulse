@@ -7,17 +7,28 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/juanpabloaj/workpulse/internal/model"
 )
 
 type GeminiCollector struct {
-	root string
+	root         string
+	mu           sync.RWMutex
+	sessionCache map[string]geminiSessionCacheEntry
 }
 
 func NewGeminiCollector() *GeminiCollector {
-	return &GeminiCollector{root: homePath(".gemini")}
+	return &GeminiCollector{
+		root:         homePath(".gemini"),
+		sessionCache: make(map[string]geminiSessionCacheEntry),
+	}
+}
+
+type geminiSessionCacheEntry struct {
+	session model.Session
+	mtime   time.Time
 }
 
 type geminiProjectsFile struct {
@@ -172,6 +183,18 @@ func (c *GeminiCollector) loadGeminiProjectRoots() map[string]string {
 }
 
 func (c *GeminiCollector) readChat(path string, projectRoots map[string]string) (model.Session, bool) {
+	if info, err := os.Stat(path); err == nil {
+		if cached, ok := c.cachedGeminiSession(path, info.ModTime()); ok {
+			projectKey := filepath.Base(filepath.Dir(filepath.Dir(path)))
+			cwd := projectRoots[projectKey]
+			if cached.CWD == "" {
+				cached.CWD = cwd
+				cached.Project = firstNonEmpty(shortenPath(cwd), projectKey)
+			}
+			return cached, cached.ID != ""
+		}
+	}
+
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return model.Session{}, false
@@ -211,8 +234,23 @@ func (c *GeminiCollector) readChat(path string, projectRoots map[string]string) 
 	if session.Project == "" || session.Project == "-" {
 		session.Project = firstNonEmpty(projectKey, shortenPath(session.CWD), "-")
 	}
+	if info, err := os.Stat(path); err == nil {
+		c.mu.Lock()
+		c.sessionCache[path] = geminiSessionCacheEntry{session: session, mtime: info.ModTime()}
+		c.mu.Unlock()
+	}
 
 	return session, session.ID != ""
+}
+
+func (c *GeminiCollector) cachedGeminiSession(path string, modTime time.Time) (model.Session, bool) {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	entry, ok := c.sessionCache[path]
+	if !ok || !entry.mtime.Equal(modTime) {
+		return model.Session{}, false
+	}
+	return entry.session, true
 }
 
 func updateGeminiSession(session *model.Session, msg geminiMessage) {
