@@ -67,3 +67,11 @@ func TestClaudeReadProjectSessionUsesCacheWhenMtimeUnchanged(t *testing.T) {
 		t.Fatalf("cached session ID = %q, want %q", cached.ID, session.ID)
 	}
 }
+
+func TestEncodeClaudeProject(t *testing.T) {
+	got := encodeClaudeProject("/home/user/src/project_name-with-hyphen")
+	want := "-home-user-src-project-name-with-hyphen"
+	if got != want {
+		t.Fatalf("encodeClaudeProject() = %q, want %q", got, want)
+	}
+}

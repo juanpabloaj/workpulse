@@ -351,7 +351,8 @@ func countClaudeSubagents(projectDir, sessionID string) int {
 }
 
 func encodeClaudeProject(cwd string) string {
-	return strings.ReplaceAll(cwd, string(filepath.Separator), "-")
+	s := strings.ReplaceAll(cwd, string(filepath.Separator), "-")
+	return strings.ReplaceAll(s, "_", "-")
 }
 
 func decodeClaudeProject(project string) string {
