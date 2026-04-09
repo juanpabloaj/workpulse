@@ -87,14 +87,13 @@ func (c *ClaudeCollector) Collect(ctx context.Context) ([]model.Session, error) 
 		return nil, err
 	}
 
-	sort.Slice(projectFiles, func(i, j int) bool {
-		iInfo, iErr := os.Stat(projectFiles[i])
-		jInfo, jErr := os.Stat(projectFiles[j])
-		if iErr != nil || jErr != nil {
-			return projectFiles[i] < projectFiles[j]
+	projectModTimes := make(map[string]time.Time, len(projectFiles))
+	for _, path := range projectFiles {
+		if info, statErr := os.Stat(path); statErr == nil {
+			projectModTimes[path] = info.ModTime()
 		}
-		return iInfo.ModTime().After(jInfo.ModTime())
-	})
+	}
+	sortProjectFilesByModTime(projectFiles, projectModTimes)
 
 	if len(projectFiles) > 20 {
 		projectFiles = projectFiles[:20]
@@ -121,6 +120,17 @@ func (c *ClaudeCollector) Collect(ctx context.Context) ([]model.Session, error) 
 		return sessions[i].LastEventAt.After(sessions[j].LastEventAt)
 	})
 	return sessions, nil
+}
+
+func sortProjectFilesByModTime(paths []string, modTimes map[string]time.Time) {
+	sort.Slice(paths, func(i, j int) bool {
+		iMod, iOK := modTimes[paths[i]]
+		jMod, jOK := modTimes[paths[j]]
+		if !iOK || !jOK {
+			return paths[i] < paths[j]
+		}
+		return iMod.After(jMod)
+	})
 }
 
 func (c *ClaudeCollector) readIndexedSession(_ context.Context, path string) (model.Session, bool) {
