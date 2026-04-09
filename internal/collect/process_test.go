@@ -1,9 +1,13 @@
 package collect
 
 import (
+	"context"
 	"reflect"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/juanpabloaj/workpulse/internal/model"
 )
 
 func TestParseBatchCWDOutput(t *testing.T) {
@@ -30,5 +34,27 @@ func TestParseBatchCWDOutput(t *testing.T) {
 
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("parseBatchCWDOutput() = %#v, want %#v", got, want)
+	}
+}
+
+func TestProcessCollectorCollectUsesCache(t *testing.T) {
+	expected := []model.ProcessInfo{
+		{PID: 101, Command: "claude", CWD: "/home/user/src/project1"},
+	}
+	collector := &ProcessCollector{
+		cache:    append([]model.ProcessInfo(nil), expected...),
+		cachedAt: time.Now(),
+		cacheTTL: 5 * time.Second,
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	got, err := collector.Collect(ctx)
+	if err != nil {
+		t.Fatalf("Collect() error = %v, want nil", err)
+	}
+	if !reflect.DeepEqual(got, expected) {
+		t.Fatalf("Collect() = %#v, want %#v", got, expected)
 	}
 }

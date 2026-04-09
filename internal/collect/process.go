@@ -7,17 +7,28 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/juanpabloaj/workpulse/internal/model"
 )
 
-type ProcessCollector struct{}
+type ProcessCollector struct {
+	cache    []model.ProcessInfo
+	cachedAt time.Time
+	cacheTTL time.Duration
+}
 
 func NewProcessCollector() *ProcessCollector {
-	return &ProcessCollector{}
+	return &ProcessCollector{
+		cacheTTL: 5 * time.Second,
+	}
 }
 
 func (c *ProcessCollector) Collect(ctx context.Context) ([]model.ProcessInfo, error) {
+	if len(c.cache) > 0 && time.Since(c.cachedAt) < c.cacheTTL {
+		return append([]model.ProcessInfo(nil), c.cache...), nil
+	}
+
 	cmd := exec.CommandContext(
 		ctx,
 		"ps",
@@ -72,7 +83,9 @@ func (c *ProcessCollector) Collect(ctx context.Context) ([]model.ProcessInfo, er
 		processes[i].CWD = cwds[processes[i].PID]
 	}
 
-	return processes, nil
+	c.cache = append([]model.ProcessInfo(nil), processes...)
+	c.cachedAt = time.Now()
+	return append([]model.ProcessInfo(nil), processes...), nil
 }
 
 func batchCWD(ctx context.Context, processes []model.ProcessInfo) map[int]string {
