@@ -692,8 +692,10 @@ func stateIcon(state model.SessionState) string {
 
 type tickMessage struct{}
 
+const tickInterval = 5 * time.Second
+
 func tickCmd() tea.Cmd {
-	return tea.Tick(2*time.Second, func(time.Time) tea.Msg {
+	return tea.Tick(tickInterval, func(time.Time) tea.Msg {
 		return tickMessage{}
 	})
 }
